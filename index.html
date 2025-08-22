@@ -2,68 +2,94 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Slope and Intercept Visualizer</title>
+    <meta name="viewport" content="width=600, initial-scale=1.0">
+    <title>Centroid Visualization</title>
     <style>
-        body { font-family: Arial, sans-serif; margin: 40px; }
-        .controls { margin-bottom: 20px; }
-        label { margin-right: 10px; }
-        input { width: 60px; margin-right: 20px; }
-        canvas { border: 1px solid #333; background: #fafafa; }
+        body { font-family: sans-serif; background: #f8f8f8; }
+        .container { max-width: 650px; margin: 30px auto; background: #fff; padding: 24px; border-radius: 8px; box-shadow: 0 2px 8px #0001; }
+        canvas { border: 1px solid #aaa; display: block; margin: 20px 0; background: #f0f0ff; }
+        label, input, button { font-size: 1rem; margin-right: 8px; }
+        #plotCentroid { background: #4caf50; color: #fff; }
+        #restart { background: #f44336; color: #fff; }
     </style>
 </head>
 <body>
-    <h1>Slope and Intercept Visualizer</h1>
-    <div class="controls">
-        <label for="slope">Slope (m):</label>
-        <input type="number" id="slope" value="1" step="any">
-        <label for="intercept">Intercept (b):</label>
-        <input type="number" id="intercept" value="0" step="any">
-        <button onclick="drawLine()">Plot</button>
+    <div class="container">
+        <h1>Centroid Visualization</h1>
+        <label for="numPoints">Select number of random points:</label>
+        <input type="number" id="numPoints" min="1" max="100" value="10">
+        <button id="plotPoints">Plot Points</button>
+        <button id="plotCentroid">Plot Centroid</button>
+        <button id="restart">Restart</button>
+        <canvas id="canvas" width="600" height="400"></canvas>
     </div>
-    <canvas id="plot" width="500" height="400"></canvas>
     <script>
-        function drawLine() {
-            const m = parseFloat(document.getElementById('slope').value);
-            const b = parseFloat(document.getElementById('intercept').value);
-            const canvas = document.getElementById('plot');
-            const ctx = canvas.getContext('2d');
-            ctx.clearRect(0, 0, canvas.width, canvas.height);
+        const canvas = document.getElementById('canvas');
+        const ctx = canvas.getContext('2d');
+        const plotBtn = document.getElementById('plotPoints');
+        const centroidBtn = document.getElementById('plotCentroid');
+        const restartBtn = document.getElementById('restart');
+        const numPointsInput = document.getElementById('numPoints');
 
-            // Draw axes
-            ctx.strokeStyle = '#888';
-            ctx.beginPath();
-            ctx.moveTo(0, canvas.height/2);
-            ctx.lineTo(canvas.width, canvas.height/2);
-            ctx.moveTo(canvas.width/2, 0);
-            ctx.lineTo(canvas.width/2, canvas.height);
-            ctx.stroke();
+        let points = [];
+        let centroid = null;
 
-            // Plot line y = mx + b
-            ctx.strokeStyle = '#0074D9';
-            ctx.lineWidth = 2;
-            ctx.beginPath();
-            // Map x from -10 to 10
-            let x1 = -10, x2 = 10;
-            let y1 = m * x1 + b;
-            let y2 = m * x2 + b;
-            // Convert to canvas coordinates
-            function toCanvas(x, y) {
-                // x: -10 to 10 -> 0 to 500
-                // y: -10 to 10 -> 400 to 0
-                return [
-                    (x + 10) * 25,
-                    400 - ((y + 10) * 20)
-                ];
+        function randomPoints(n) {
+            const pts = [];
+            for (let i = 0; i < n; i++) {
+                pts.push({
+                    x: Math.random() * (canvas.width - 40) + 20,
+                    y: Math.random() * (canvas.height - 40) + 20
+                });
             }
-            const [cx1, cy1] = toCanvas(x1, y1);
-            const [cx2, cy2] = toCanvas(x2, y2);
-            ctx.moveTo(cx1, cy1);
-            ctx.lineTo(cx2, cy2);
-            ctx.stroke();
+            return pts;
         }
-        // Initial plot
-        drawLine();
+
+        function drawPoints() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            for (const pt of points) {
+                ctx.beginPath();
+                ctx.arc(pt.x, pt.y, 6, 0, 2 * Math.PI);
+                ctx.fillStyle = '#1976d2';
+                ctx.fill();
+                ctx.strokeStyle = '#0d47a1';
+                ctx.stroke();
+            }
+        }
+
+        function drawCentroid() {
+            if (!centroid) return;
+            ctx.beginPath();
+            ctx.arc(centroid.x, centroid.y, 12, 0, 2 * Math.PI);
+            ctx.fillStyle = '#ff9800';
+            ctx.fill();
+            ctx.strokeStyle = '#e65100';
+            ctx.stroke();
+            ctx.font = 'bold 16px sans-serif';
+            ctx.fillStyle = '#e65100';
+            ctx.fillText('Centroid', centroid.x + 15, centroid.y - 10);
+        }
+
+        plotBtn.onclick = () => {
+            const n = parseInt(numPointsInput.value, 10);
+            points = randomPoints(n);
+            centroid = null;
+            drawPoints();
+        };
+
+        centroidBtn.onclick = () => {
+            if (!points.length) return;
+            const sum = points.reduce((acc, pt) => ({x: acc.x + pt.x, y: acc.y + pt.y}), {x:0, y:0});
+            centroid = { x: sum.x / points.length, y: sum.y / points.length };
+            drawPoints();
+            drawCentroid();
+        };
+
+        restartBtn.onclick = () => {
+            points = [];
+            centroid = null;
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+        };
     </script>
 </body>
 </html>
